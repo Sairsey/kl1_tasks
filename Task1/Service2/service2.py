@@ -22,7 +22,7 @@ def callback(ch, method, properties, body):
         fwidth = fshape[1]
         print (fwidth , fheight)
         fourcc = cv2.VideoWriter_fourcc(*'XVID')
-        out = cv2.VideoWriter('output.avi',fourcc, 20.0, (fwidth,fheight))
+        out = cv2.VideoWriter('outdir/output.avi',fourcc, 20.0, (fwidth,fheight))
     else:
         out.write(frame)
         frames += 1
@@ -32,12 +32,15 @@ def callback(ch, method, properties, body):
             raise KeyboardInterrupt
 
 def main():
-    connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
-    channel = connection.channel()
-    channel.basic_consume(queue='frames',
-                      auto_ack=True,
-                      on_message_callback=callback)
-
+    while True:
+        try:
+            connection = pika.BlockingConnection(pika.ConnectionParameters('rabbit'))
+            channel = connection.channel()
+            break
+        except:
+            continue
+    print("Connected to RabbitMQ")                
+    channel.basic_consume(queue='frames', auto_ack=True, on_message_callback=callback)
     channel.start_consuming()
    
 

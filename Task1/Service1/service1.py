@@ -28,23 +28,43 @@ def resizer(q_in, q_out, size, n_grabbers):
         q_out.put(newframe)
     print("resizer quitted")
 
-def rabitter(q_in, n_grabbers):
-    connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
-    channel = connection.channel()
-    channel.queue_declare(queue='frames')
+def rabitter(q_in, n_grabbers):    
+    while True:
+        try:
+            connection = pika.BlockingConnection(pika.ConnectionParameters('rabbit'))
+            channel = connection.channel()
+            channel.queue_declare(queue='frames')
+            break
+        except:
+            continue
     while n_grabbers.value > 0:
         try:
             frame = q_in.get_nowait()
         except queue.Empty:
             continue                        
-        channel.basic_publish(exchange='', routing_key='frames', body=pickle.dumps(frame))
+        print("Connected to RabbitMQ")        
+        flag = True # Trying to send untill we sucessful.
+        while flag:
+            try:
+                channel.basic_publish(exchange='', routing_key='frames', body=pickle.dumps(frame))
+            except (pika.exceptions.ConnectionClosedByBroker, pika.exceptions.AMQPChannelError, pika.exceptions.AMQPConnectionError):
+                while True:
+                    try:
+                        connection = pika.BlockingConnection(pika.ConnectionParameters('rabbit'))
+                        channel = connection.channel()
+                        channel.queue_declare(queue='frames')
+                        break
+                    except:
+                        continue
+                continue
+            flag = False
             
     print("rabbiter quitted")
     connection.close()
 
 if __name__ == '__main__':
     config = []
-    with open("config.yaml") as f:
+    with open("outdir/config.yaml") as f:
         config = yaml.load(f)
 
     with Manager() as manager:
@@ -55,7 +75,7 @@ if __name__ == '__main__':
         Resizers = []
         Rabbiter = Process(target=rabitter, args=(Queue2, GrabbersNum))
         for i in config["paths"]:
-            proc = Process(target=grabber, args=(i, Queue1, GrabbersNum))
+            proc = Process(target=grabber, args=("outdir/" + i, Queue1, GrabbersNum))
             Grabbers.append(proc)
 
 
