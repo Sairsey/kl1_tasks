@@ -36,15 +36,11 @@ def main():
         try:
             connection = pika.BlockingConnection(pika.ConnectionParameters('rabbit'))
             channel = connection.channel()
-            break
-        except:
+            channel.basic_consume(queue='frames', auto_ack=True, on_message_callback=callback)
+            channel.start_consuming()
+        except (pika.exceptions.ConnectionClosedByBroker, pika.exceptions.AMQPChannelError, pika.exceptions.AMQPConnectionError):
             continue
-    print("Connected to RabbitMQ")                
-    channel.basic_consume(queue='frames', auto_ack=True, on_message_callback=callback)
-    channel.start_consuming()
-   
-
-
+    
 if __name__ == "__main__":
     try:
         main()

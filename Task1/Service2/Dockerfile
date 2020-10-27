@@ -1,7 +1,24 @@
-FROM ubuntu:18.04
-RUN apt-get update && apt-get install -y python3.7 python3.7-dev python3-pip cmake clang make gcc g++ libgl1-mesa-glx
+FROM python:3.7
+RUN apt-get update \
+    && apt-get install -y \
+        build-essential \
+        cmake \
+        git \
+        wget \
+        unzip \
+        yasm \
+        pkg-config \
+        libswscale-dev \
+        libtbb2 \
+        libtbb-dev \
+        libjpeg-dev \
+        libpng-dev \
+        libtiff-dev \
+        libavformat-dev \
+        libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
 COPY ./requiments.txt /project/requirements.txt 
-RUN pip3 install --upgrade pip && pip3 install opencv-python && pip3 install pika && pip3 install pyaml
+RUN pip3 install --upgrade pip && pip3 install -r /project/requirements.txt 
 COPY ./service2.py /project/service2.py
 WORKDIR /project
 CMD ["python3", "service2.py"]
